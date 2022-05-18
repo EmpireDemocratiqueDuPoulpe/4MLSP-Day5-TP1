@@ -24,6 +24,12 @@ def main():
     mlsp.misc.print_title("Missing values")
     mlsp.df.missing_values(data)
 
+    # Merge [x, y, z] into `volume`
+    mlsp.misc.print_title("Merge [x, y, z] into `volume`")
+    data["volume"] = data["x"] * data["y"] * data["z"]
+    data.drop(columns=["x", "y", "z"])
+    print(data.sample(n=5))
+
     # Splitting dataset
     mlsp.misc.print_title("Splitting dataset")
     x_train, x_test, y_train, y_test = mlsp.df.split_train_test(data, y_label="price", test_size=0.20)
