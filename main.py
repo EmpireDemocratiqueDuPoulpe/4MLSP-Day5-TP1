@@ -78,9 +78,17 @@ def main():
         ]
     )
 
-    # Get model
-    mlsp.misc.print_title("Get model")
-    model, scores = mlsp.models.linear_model.linear_regression_model(
+    # Get model (Linear Regression)
+    mlsp.misc.print_title("Get model (Linear Regression)")
+    mlsp.models.linear_model.linear_regression_model(
+        preprocessor,
+        x_train=x_train, y_train=y_train,
+        x_test=x_test, y_test=y_test
+    )
+
+    # Get model (KNeighbors Regression)
+    mlsp.misc.print_title("Get model (KNeighbors Regression)")
+    mlsp.models.neighbors.k_neighbors_regressor(
         preprocessor,
         x_train=x_train, y_train=y_train,
         x_test=x_test, y_test=y_test
