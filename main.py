@@ -1,11 +1,12 @@
 from timeit import default_timer as timer
 from datetime import timedelta
 import colorama
+import numpy
 from colorama import Style, Fore
 import pandas
-import scipy.stats
 from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
+from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 from sklearn.pipeline import Pipeline
 import mlsp
@@ -88,10 +89,24 @@ def main():
 
     # Get model (KNeighbors Regression)
     mlsp.misc.print_title("Get model (KNeighbors Regression)")
-    mlsp.models.neighbors.k_neighbors_regressor(
+    kneighbors_model, kneighbors_scores = mlsp.models.neighbors.k_neighbors_regressor(
         preprocessor,
         x_train=x_train, y_train=y_train,
         x_test=x_test, y_test=y_test
+    )
+
+    # > Quality measurements (Grid Search CV)
+    mlsp.misc.print_title("> Quality measurements (Grid Search CV)", char="~")
+    grid_params = {
+        "k_neighbors_regressor__n_neighbors": numpy.arange(1, 20),
+        "k_neighbors_regressor__metric": ["euclidean", "manhattan", "minkowski"]
+    }
+    grid = GridSearchCV(kneighbors_model, grid_params, cv=10)
+    kneighbors_model = mlsp.search.best_model(
+        kneighbors_model, search=grid,
+        x_train=x_train, y_train=y_train,
+        x_test=x_test, y_test=y_test,
+        train_score=kneighbors_scores["train_score"], test_score=kneighbors_scores["test_score"]
     )
 
     # Program end
