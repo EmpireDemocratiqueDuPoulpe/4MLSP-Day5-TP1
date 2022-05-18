@@ -3,6 +3,7 @@ from datetime import timedelta
 import colorama
 from colorama import Style, Fore
 import pandas
+import scipy.stats
 from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder
@@ -27,8 +28,33 @@ def main():
     # Merge [x, y, z] into `volume`
     mlsp.misc.print_title("Merge [x, y, z] into `volume`")
     data["volume"] = data["x"] * data["y"] * data["z"]
-    data.drop(columns=["x", "y", "z"])
+    data.drop(columns=["x", "y", "z"], inplace=True)
     print(data.sample(n=5))
+
+    # Study
+    mlsp.misc.print_title("Study")
+    features = ["carat", "depth", "table", "volume", "price"]
+
+    analyze = data.describe().T
+    analyze["dispersion"] = data[features].std() / data[features].mean() * 100
+    analyze["standard error"] = data[features].sem()
+    analyze["skewness"] = data[features].skew()
+    analyze["kurtosis"] = data[features].kurtosis()
+
+    q1 = data.quantile(0.25)
+    q3 = data.quantile(0.75)
+    iqr = q3 - q1
+    is_outliers = ((data < (q1 - 1.5 * iqr)) | (data > (q3 + 1.5 * iqr)))
+    analyze["outliers"] = is_outliers.sum(axis=0) / data.shape[0] * 100  # Percent of outliers per column
+
+    pandas.set_option("display.max_columns", None)
+    print(f"Analyze:\n{Style.DIM}{Fore.WHITE}{analyze}")
+    pandas.set_option("display.max_columns", 5)
+
+    # Normality test
+    # pvalue < 5% = not random
+    statistic, pvalue = scipy.stats.shapiro(data["price"])
+    print(f"Normality test: pvalue={Fore.LIGHTGREEN_EX}{pvalue}{Fore.RESET} | statistic={Fore.LIGHTGREEN_EX}{pvalue}")
 
     # Splitting dataset
     mlsp.misc.print_title("Splitting dataset")
@@ -47,7 +73,7 @@ def main():
         ("encoder", OrdinalEncoder())
     ])
 
-    numeric_features = ["carat", "depth", "table", "x", "y", "z"]
+    numeric_features = ["carat", "depth", "table", "volume"]
     categorical_features = ["cut", "color", "clarity"]
 
     preprocessor = ColumnTransformer(
