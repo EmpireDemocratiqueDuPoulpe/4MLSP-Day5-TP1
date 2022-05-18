@@ -79,35 +79,85 @@ def main():
         ]
     )
 
-    # Get model (Linear Regression)
-    mlsp.misc.print_title("Get model (Linear Regression)")
-    mlsp.models.linear_model.linear_regression_model(
-        preprocessor,
-        x_train=x_train, y_train=y_train,
-        x_test=x_test, y_test=y_test
-    )
-
-    # Get model (KNeighbors Regression)
-    mlsp.misc.print_title("Get model (KNeighbors Regression)")
-    kneighbors_model, kneighbors_scores = mlsp.models.neighbors.k_neighbors_regressor(
-        preprocessor,
-        x_train=x_train, y_train=y_train,
-        x_test=x_test, y_test=y_test
-    )
-
-    # > Quality measurements (Grid Search CV)
-    mlsp.misc.print_title("> Quality measurements (Grid Search CV)", char="~")
-    grid_params = {
-        "k_neighbors_regressor__n_neighbors": numpy.arange(1, 20),
-        "k_neighbors_regressor__metric": ["euclidean", "manhattan", "minkowski"]
+    # Get models
+    models = {
+        "linear_regression": {
+            "name": "Linear Regression",
+            "hyper_params": None
+        },
+        "k_neighbors_regression": {
+            "name": "KNeighbors Regression",
+            "hyper_params": {
+                "k_neighbors_regressor__n_neighbors": numpy.arange(1, 20),
+                "k_neighbors_regressor__metric": ["euclidean", "manhattan", "minkowski"]
+            }
+        },
+        "decision_tree_regressor": {
+            "name": "Decision Tree Regressor",
+            "hyper_params": {
+                "tree_regressor__criterion": ["squared_error", "friedman_mse", "absolute_error", "poisson"],
+                "tree_regressor__min_samples_split": numpy.arange(2, 3),
+            }
+        },
+        "random_forest_regressor": {
+            "name": "Random Forest Regressor",
+            "hyper_params": {
+                "random_forest_regressor__n_estimators": numpy.arange(100, 105),
+                "random_forest_regressor__criterion": ["squared_error", "absolute_error", "poisson"],
+            }
+        }
     }
-    grid = GridSearchCV(kneighbors_model, grid_params, cv=10)
-    kneighbors_model = mlsp.search.best_model(
-        kneighbors_model, search=grid,
-        x_train=x_train, y_train=y_train,
-        x_test=x_test, y_test=y_test,
-        train_score=kneighbors_scores["train_score"], test_score=kneighbors_scores["test_score"]
-    )
+
+    for model_key in models:
+        # Start of model processing
+        model_start_time = timer()
+        model_infos = models[model_key]
+
+        # Get model
+        mlsp.misc.print_title(f"Get model ({model_infos['name']})")
+
+        if model_infos["name"] == "Linear Regression":
+            model, scores = mlsp.models.linear_model.linear_regression_model(
+                preprocessor,
+                x_train=x_train, y_train=y_train,
+                x_test=x_test, y_test=y_test
+            )
+        elif model_infos["name"] == "KNeighbors Regression":
+            model, scores = mlsp.models.neighbors.k_neighbors_regressor(
+                preprocessor,
+                x_train=x_train, y_train=y_train,
+                x_test=x_test, y_test=y_test
+            )
+        elif model_infos["name"] == "Decision Tree Regressor":
+            model, scores = mlsp.models.tree.regressor(
+                preprocessor,
+                x_train=x_train, y_train=y_train,
+                x_test=x_test, y_test=y_test
+            )
+        elif model_infos["name"] == "Random Forest Regressor":
+            model, scores = mlsp.models.ensemble.random_forest_regressor(
+                preprocessor,
+                x_train=x_train, y_train=y_train,
+                x_test=x_test, y_test=y_test
+            )
+        else:
+            raise NameError(f"Invalid model name: {model_key}")
+
+        # > Quality measurements (Grid Search CV)
+        if model_infos["hyper_params"] is not None:
+            mlsp.misc.print_title("> Quality measurements (Grid Search CV)", char="~")
+            grid = GridSearchCV(model, model_infos["hyper_params"], cv=10, verbose=1)
+            mlsp.search.best_model(
+                model, search=grid,
+                x_train=x_train, y_train=y_train,
+                x_test=x_test, y_test=y_test,
+                train_score=scores["train_score"], test_score=scores["test_score"]
+            )
+
+        # End of model processing
+        model_end_time = timer()
+        model_elapsed_time = timedelta(seconds=model_end_time - model_start_time)
+        print(f"\n{Fore.GREEN}Successful processing of {model_infos['name']} model in {model_elapsed_time}.")
 
     # Program end
     end_time = timer()
