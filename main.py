@@ -51,11 +51,6 @@ def main():
     print(f"Analyze:\n{Style.DIM}{Fore.WHITE}{analyze}")
     pandas.set_option("display.max_columns", 5)
 
-    # Normality test
-    # pvalue < 5% = not random
-    statistic, pvalue = scipy.stats.shapiro(data["price"])
-    print(f"Normality test: pvalue={Fore.LIGHTGREEN_EX}{pvalue}{Fore.RESET} | statistic={Fore.LIGHTGREEN_EX}{pvalue}")
-
     # Splitting dataset
     mlsp.misc.print_title("Splitting dataset")
     x_train, x_test, y_train, y_test = mlsp.df.split_train_test(data, y_label="price", test_size=0.20)
@@ -81,6 +76,14 @@ def main():
             ("numeric", numeric_transformer, numeric_features),
             ("categorical", categorical_transformer, categorical_features)
         ]
+    )
+
+    # Get model
+    mlsp.misc.print_title("Get model")
+    model, scores = mlsp.models.linear_model.linear_regression_model(
+        preprocessor,
+        x_train=x_train, y_train=y_train,
+        x_test=x_test, y_test=y_test
     )
 
     # Program end
